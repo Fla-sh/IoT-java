@@ -24,6 +24,7 @@ public class BluetoothScanner implements Runnable {
     private ArrayList<String> scan_result;
 
     public BluetoothScanner(){
+        Printer.print(this, "Bluetooth scanner started");
         found_devices = new HashMap<>();
         scan_result = new ArrayList<>();
         new Thread(this, "ScannerThread").start();
@@ -61,6 +62,9 @@ public class BluetoothScanner implements Runnable {
      * @param addres current device address
      */
     private void registerDevice(int rssi, String addres){
+        Printer.print(this, "Appending to device: " +
+                addres + " value: " + 
+                rssi);
         if(found_devices.containsKey(addres)){
             found_devices.get(addres).add(rssi);
         }
@@ -128,6 +132,7 @@ public class BluetoothScanner implements Runnable {
      * in last step we need to create one element arrayList
      */
     private void evaluateAvarnge(){
+        Printer.print(this, "Evaluating averages for devices in scan result");
         for(String key: found_devices.keySet()){
             Integer sum = 0;
             for(Integer value: found_devices.get(key)) sum += value;

@@ -17,7 +17,7 @@ public class App
          */
         System.out.println( "Starting IoT" );
         System.out.println("Calling Bluetooth scanner");
-        new BluetoothScanner();
+        //new BluetoothScanner();
         System.out.println("Calling Lights Controller");
         new Controller();
     }
