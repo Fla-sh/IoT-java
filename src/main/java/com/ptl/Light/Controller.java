@@ -1,19 +1,15 @@
 package com.ptl.Light;
 
 
-import com.ptl.Communication.Order;
-import com.ptl.Communication.OrderNotFoundException;
-import com.ptl.Communication.OrderPlace;
-import com.ptl.Communication.ReadOrder;
+import com.ptl.Communication.Messages.LightMessage.LightMessage;
+import com.ptl.Communication.Messages.LightMessage.ReadLightMessage;
+import com.ptl.Communication.Messages.MessageNotFoundException;
 import com.ptl.Light.Programs.ProgramOff;
-import com.ptl.Light.Trigers.TagVicinity;
 import com.ptl.Light.Trigers.TriggerModel;
 import com.ptl.Maintain.CColors;
 import com.ptl.Maintain.Printer;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 
 /**
  * Class is main module of light control system
@@ -34,27 +30,28 @@ import java.util.HashMap;
 public class Controller implements Runnable {
     private Boolean newOrder;
     private Boolean wasTriggered;
-    private Order actualOrder;
+    private LightMessage actualMessage;
 
     public Controller(){
-        Printer.print(this, "Lights controller started");
+        System.out.println("Lights controller started");
         newOrder = false;
         wasTriggered = false;
+        actualMessage = new LightMessage(new ProgramOff(), new ArrayList<>());
         new Thread(this, "LightController").start();
     }
 
 
     @Override
     public void run() {
-        System.out.println("\n-------\n");
+        Printer.print(this, "\n-------\n");
         while(true){
             try {
                 updateState();
-                Thread.sleep(1000);
+                Thread.sleep(5000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            System.out.println("\n-------\n");
+            Printer.print(this, "\n-------\n");
         }
     }
 
@@ -70,14 +67,14 @@ public class Controller implements Runnable {
         if(newOrder && trigger){
             Printer.print(this, "New order come, and was successful triggered");
             Printer.print(this, "Executing new program");
-            actualOrder.runProgram();
+            actualMessage.runProgram();
             newOrder = false;
             wasTriggered = false;
         }
         else if(!wasTriggered && trigger){
             Printer.print(this, "No new order come, but some trigger occurred");
             Printer.print(this, "Executing program");
-            actualOrder.runProgram();
+            actualMessage.runProgram();
             wasTriggered = true;
         }
         else if(!wasTriggered && !trigger){
@@ -97,27 +94,21 @@ public class Controller implements Runnable {
     }
 
     /**
-     * Check if some new orders appear in swap file, if so update actualOrder field
+     * Check if some new orders appear in swap file, if so update actualMessage field
      */
     private void checkForNewOrders(){
         Printer.print(this, "Checking for new orders");
         try {
-            actualOrder = ReadOrder.Read(OrderPlace.HTTP);
+            actualMessage = ReadLightMessage.read();
             newOrder = true;
             Printer.print(this, "New order found!");
             Printer.print(this, "New order is: \n" +
-                    actualOrder.toString());
-        } catch (OrderNotFoundException e) {
-            try {
-                actualOrder = ReadOrder.Read(OrderPlace.CONSOLE);
-                newOrder = true;
-                Printer.print(this, "New order found!");
-                Printer.print(this, "New order is: \n" +
-                        actualOrder.toString());
-            } catch (OrderNotFoundException ex) {
-                Printer.print(this, "No new orders found");
-            }
+                    actualMessage.toString());
+
+        } catch (MessageNotFoundException ex) {
+            Printer.print(this, "No new orders found");
         }
+
     }
 
     /**
@@ -129,7 +120,7 @@ public class Controller implements Runnable {
         /**
          * triggers contains array with triggers
          */
-        ArrayList<TriggerModel> triggers = actualOrder.getTriggerss();
+        ArrayList<TriggerModel> triggers = actualMessage.getTriggerss();
         if(triggers.size() != 0) {
             for (TriggerModel trigger : triggers) {
                 if(!trigger.check()){
@@ -139,8 +130,11 @@ public class Controller implements Runnable {
                 }
                 Printer.print(this, CColors.CYAN + trigger.getName() + CColors.RESET + " is triggered");
             }
+            Printer.print(this, "All triggers checked");
         }
-        Printer.print(this, "All triggers triggered");
+        else{
+            Printer.print(this, "No triggers found");
+        }
         return true;
     }
 }

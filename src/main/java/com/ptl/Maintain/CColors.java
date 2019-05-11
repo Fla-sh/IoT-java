@@ -1,5 +1,8 @@
 package com.ptl.Maintain;
 
+/**
+ * Contains available colours for console
+ */
 public class CColors {
     // Reset
     public static final String RESET = "\033[0m";  // Text Reset

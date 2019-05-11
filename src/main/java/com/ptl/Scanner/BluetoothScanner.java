@@ -10,16 +10,16 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 
-/*
-    class is used to search for Bluetooth devices in vicinity
-    results are saved to result.csv file in format device address, avg rssi
-    to file is appended timestamp
+/**
+ * to search for Bluetooth devices in vicinity
+ *     results are saved to result.csv file in format
+ *     device address,avg rssi
+ *     to file is appended timestamp as last line
  */
-
 public class BluetoothScanner implements Runnable {
-    private final String[] gain_sudo_command = {"/bin/bash", "-c", "echo \"instrukcja\" | sudo -S apt-get"};
-    private final String result_file_name = "runningDevices.csv";
+    private final String[] gain_sudo_command = {"/bin/bash", "-c", "echo \"instrukcja\" | sudo -S apt-getName"};
     private final String[] scan_command = {"/bin/bash", "-c", "sudo /usr/bin/btmgmt find"};
+    private final String result_file_name = "runningDevices.csv";
     private HashMap<String, ArrayList<Integer>> found_devices;
     private ArrayList<String> scan_result;
 
@@ -41,11 +41,14 @@ public class BluetoothScanner implements Runnable {
     }
 
     /**
-     * running command make us to have sudo permissions, and also
-     * cause problems if called simultaneously with btmgmt command
-     * so sudo must be firstly used on some other command
+     * gains sudo privilege
      */
     private void gainSudo(){
+        /*
+         * running command make us to have sudo permissions, and also
+         * cause problems if called simultaneously with btmgmt command
+         * so sudo must be firstly used on some other command
+         */
         Printer.print(this, "Gaining sudo for scan cast");
         ProcessBuilder processBuilder = new ProcessBuilder().command(gain_sudo_command);
         try {
@@ -56,14 +59,14 @@ public class BluetoothScanner implements Runnable {
     }
 
     /**
-     * function append to known_devices map values of given device, or create
-     * new element in hash map if not exist
+     * function append to known_devices map values of rssi for given device, or create
+     * new element in hash map if no previous rssi was found
      * @param rssi current device rssi
      * @param addres current device address
      */
     private void registerDevice(int rssi, String addres){
         Printer.print(this, "Appending to device: " +
-                addres + " value: " + 
+                addres + " value: " +
                 rssi);
         if(found_devices.containsKey(addres)){
             found_devices.get(addres).add(rssi);
@@ -76,14 +79,18 @@ public class BluetoothScanner implements Runnable {
     }
 
     /**
-     * Function start linux command btmgmt and save it result to as string in global variable
-     * Each call of this command must starts with reset of found devices hash map
-     * or previously discovered devices will be shown again
+     * Function start linux command btmgmt
+     * and save it result as ArrayList to variable
      */
     private void scan(){
+        /*
+        Each call of this command must starts with reset of found devices hash map
+        or previously discovered devices will be shown again
+         */
+        found_devices = new HashMap<>();
+
         Printer.print(this, "Invoking btmgmt command");
         ArrayList<String> response = new ArrayList<>();
-        found_devices = new HashMap<>();
         try {
             ProcessBuilder processBuilder = new ProcessBuilder();
             processBuilder.command(scan_command);
@@ -103,12 +110,15 @@ public class BluetoothScanner implements Runnable {
     }
 
     /**
-     * Function reads result of scan function and looks for device name
-     * and corresponding rssi value for each line
-     * If rssi and device address was found function calls registerDevice function to
-     * save newly found device
+     Function analyse results of scan iterating over scan_result
+     and searching for pairs of device name and rssi.
+     If such pair was found function registerDevice is called
      */
     private void analyseScan(){
+        /*
+        Device name is always after dev_found:
+        Rssi is always after rssi:
+         */
         Printer.print(this, "Analysing scan result");
         for (String line: scan_result) {
             String words[] = line.split(" ");
@@ -127,11 +137,15 @@ public class BluetoothScanner implements Runnable {
     }
 
     /**
-     * Function used to evaluate averange of values of recived rssi for each device
-     * found_device variable as values for keys takes only arrayList class objects so
-     * in last step we need to create one element arrayList
+     * Function used to evaluate average of values of received rssi for each device
      */
     private void evaluateAvarnge(){
+        /*
+        found_devices HashMap so far contains String as key, and ArrayList as values
+        ArrayList contains sequence of Integers corresponding to rssi values
+        Now we need to transform these rssi values to average, but whole process needs to
+        end up saving one average value as ArrayList found_devices HashMap
+         */
         Printer.print(this, "Evaluating averages for devices in scan result");
         for(String key: found_devices.keySet()){
             Integer sum = 0;
